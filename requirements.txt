@@ -1,7 +1,6 @@
 Flask==2.3.3
+Flask-Cors==4.0.0
 gunicorn==20.1.0
-<<<<<<< HEAD
-pandas==1.5.3
+pandas==2.1.4
 numpy==1.24.3
-=======
->>>>>>> c9c8229628bde715683901b3193307d57a2da75d
+scikit-learn==1.3.2
