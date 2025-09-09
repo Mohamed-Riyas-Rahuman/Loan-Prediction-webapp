@@ -1,3 +1,2 @@
-# Create a NEW requirements.txt with ONLY:
-echo "Flask==2.3.3
-gunicorn==20.1.0" > requirements.txt
+Flask==2.3.3
+gunicorn==20.1.0
