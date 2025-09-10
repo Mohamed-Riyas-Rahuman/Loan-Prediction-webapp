@@ -142,7 +142,7 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=False)
 '''  
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
-from flask_cors import CORS  # For cross-origin requests
+from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -152,15 +152,16 @@ import os
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///users.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
 
 # User model
 class User(UserMixin, db.Model):
@@ -182,13 +183,14 @@ except ImportError as e:
     # Create a mock function as fallback
     def predict_loan_default(input_data):
         print("⚠️ Using mock prediction function (fallback)")
-        loan_amount = input_data.get('LoanAmount', [10000])[0] if hasattr(input_data, 'get') else 10000
-        annual_income = input_data.get('AnnualIncome', [50000])[0] if hasattr(input_data, 'get') else 50000
-        interest_rate = input_data.get('InterestRate', [7.5])[0] if hasattr(input_data, 'get') else 7.5
+        # Extract values safely
+        loan_amount = input_data.get('LoanAmount', [10000])[0] if isinstance(input_data, dict) else 10000
+        annual_income = input_data.get('AnnualIncome', [50000])[0] if isinstance(input_data, dict) else 50000
+        interest_rate = input_data.get('InterestRate', [7.5])[0] if isinstance(input_data, dict) else 7.5
 
         # Simple risk calculation
         risk_score = (loan_amount / annual_income) * 0.4 + (interest_rate / 10) * 0.3
-        risk_score = max(0, min(1, risk_score))
+        risk_score = max(0.1, min(0.9, risk_score))  # Keep between 0.1-0.9
 
         prediction = 1 if risk_score > 0.5 else 0
 
@@ -211,13 +213,20 @@ with app.app_context():
             email='admin@loanapp.com',
             password_hash=generate_password_hash('admin123')
         )
-        db.session.add(admin_user)
-        db.session.commit()
-        print("✅ Admin user created: admin / admin123")
+        try:
+            db.session.add(admin_user)
+            db.session.commit()
+            print("✅ Admin user created: admin / admin123")
+        except Exception as e:
+            print(f"❌ Error creating admin user: {e}")
+            db.session.rollback()
 
 # Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -227,7 +236,8 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash('Login successful!', 'success')
-            return redirect(url_for('dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password', 'error')
     
@@ -235,12 +245,18 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+        
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
         
-        if User.query.filter_by(username=username).first():
+        if password != confirm_password:
+            flash('Passwords do not match', 'error')
+        elif User.query.filter_by(username=username).first():
             flash('Username already exists', 'error')
         else:
             new_user = User(
@@ -248,10 +264,14 @@ def register():
                 email=email,
                 password_hash=generate_password_hash(password)
             )
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
+            try:
+                db.session.add(new_user)
+                db.session.commit()
+                flash('Registration successful! Please login.', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
+                db.session.rollback()
+                flash('Error creating account. Please try again.', 'error')
     
     return render_template('register.html')
 
@@ -274,7 +294,6 @@ def home():
     return render_template('index.html', user=current_user)
 
 @app.route('/predict', methods=['POST'])
-@login_required  # Require login for predictions
 def predict():
     try:
         # Get data from the request
@@ -305,7 +324,7 @@ def predict():
 
             # Simple fallback calculation
             risk_score = (loan_amount / annual_income) * 0.4
-            risk_score = max(0, min(1, risk_score))
+            risk_score = max(0.1, min(0.9, risk_score))
 
             return jsonify({
                 'prediction': 1 if risk_score > 0.5 else 0,
@@ -316,15 +335,25 @@ def predict():
             })
         except:
             return jsonify({
-                'error': str(e),
+                'error': 'Internal server error',
                 'status': 'error',
                 'note': 'Please check your input values'
-            })
+            }), 500
 
 # Health check endpoint for Render
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy', 'message': '✅ Server is running'})
+
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     # Use Render's port environment variable or default to 5000
