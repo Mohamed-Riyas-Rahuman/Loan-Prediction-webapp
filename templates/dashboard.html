@@ -2,40 +2,71 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
-            <span class="badge bg-primary">Welcome, {{ user.username }}</span>
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h2 class="fw-bold"><i class="fas fa-tachometer-alt me-3"></i>Dashboard</h2>
+            <span class="badge bg-primary fs-6">Welcome, {{ user.username }}</span>
         </div>
         
         <div class="row">
-            <div class="col-md-4">
-                <div class="card text-white bg-primary mb-3">
-                    <div class="card-body">
+            <!-- Quick Prediction Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 bg-gradient-primary text-white">
+                    <div class="card-body text-center p-5">
+                        <i class="fas fa-calculator fa-3x mb-3"></i>
                         <h5 class="card-title">Quick Prediction</h5>
-                        <p class="card-text">Make a new loan prediction</p>
-                        <a href="{{ url_for('home') }}" class="btn btn-light">Predict Now</a>
+                        <p class="card-text">Make a new loan prediction instantly</p>
+                        <a href="{{ url_for('home') }}" class="btn btn-light rounded-pill px-4">
+                            <i class="fas fa-bolt me-2"></i>Predict Now
+                        </a>
                     </div>
                 </div>
             </div>
             
-            <div class="col-md-4">
-                <div class="card text-white bg-success mb-3">
-                    <div class="card-body">
+            <!-- Account Info Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 bg-gradient-success text-white">
+                    <div class="card-body p-5">
+                        <i class="fas fa-user-circle fa-3x mb-3"></i>
                         <h5 class="card-title">Account Info</h5>
-                        <p class="card-text">Username: {{ user.username }}</p>
-                        <p class="card-text">Email: {{ user.email }}</p>
+                        <div class="mt-4">
+                            <p><i class="fas fa-user me-2"></i> <strong>Username:</strong> {{ user.username }}</p>
+                            <p><i class="fas fa-envelope me-2"></i> <strong>Email:</strong> {{ user.email }}</p>
+                            <p><i class="fas fa-calendar me-2"></i> <strong>Member since:</strong> {{ user.created_at.strftime('%b %d, %Y') }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="col-md-4">
-                <div class="card text-white bg-info mb-3">
-                    <div class="card-body">
+            <!-- App Status Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 bg-gradient-info text-white">
+                    <div class="card-body p-5">
+                        <i class="fas fa-chart-line fa-3x mb-3"></i>
                         <h5 class="card-title">App Status</h5>
-                        <p class="card-text">ML Model: {% if 'model' in globals() %}✅ Loaded{% else %}⚠️ Mock{% endif %}</p>
-                        <p class="card-text">Users: {{ user_count }}</p>
+                        <div class="mt-4">
+                            <p><i class="fas fa-brain me-2"></i> <strong>ML Model:</strong> 
+                                {% if 'model' in globals() %}✅ Active{% else %}⚠️ Mock{% endif %}</p>
+                            <p><i class="fas fa-users me-2"></i> <strong>Total Users:</strong> {{ user_count }}</p>
+                            <p><i class="fas fa-check-circle me-2"></i> <strong>Status:</strong> ✅ Operational</p>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity Section -->
+        <div class="card border-0 mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">No recent activity yet</p>
+                    <a href="{{ url_for('home') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Make Your First Prediction
+                    </a>
                 </div>
             </div>
         </div>

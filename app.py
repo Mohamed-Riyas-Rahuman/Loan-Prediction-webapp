@@ -149,6 +149,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
 import numpy as np
 import os
+from datetime import datetime
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -169,6 +170,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -221,7 +223,11 @@ with app.app_context():
             print(f"❌ Error creating admin user: {e}")
             db.session.rollback()
 
-# Authentication routes
+# Routes
+@app.route('/')
+def home():
+    return render_template('index.html', user=current_user)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -235,13 +241,13 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            flash('Login successful!', 'success')
+            flash('🎉 Login successful! Welcome back!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
-            flash('Invalid username or password', 'error')
+            flash('❌ Invalid username or password', 'error')
     
-    return render_template('login.html')
+    return render_template('login.html', user=current_user)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -255,9 +261,9 @@ def register():
         confirm_password = request.form.get('confirm_password')
         
         if password != confirm_password:
-            flash('Passwords do not match', 'error')
+            flash('🔒 Passwords do not match', 'error')
         elif User.query.filter_by(username=username).first():
-            flash('Username already exists', 'error')
+            flash('👤 Username already exists', 'error')
         else:
             new_user = User(
                 username=username,
@@ -267,46 +273,36 @@ def register():
             try:
                 db.session.add(new_user)
                 db.session.commit()
-                flash('Registration successful! Please login.', 'success')
+                flash('✅ Registration successful! Please login.', 'success')
                 return redirect(url_for('login'))
             except Exception as e:
                 db.session.rollback()
-                flash('Error creating account. Please try again.', 'error')
+                flash('❌ Error creating account. Please try again.', 'error')
     
-    return render_template('register.html')
+    return render_template('register.html', user=current_user)
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out', 'info')
+    flash('👋 You have been logged out successfully', 'info')
     return redirect(url_for('home'))
 
-# Protected routes
 @app.route('/dashboard')
 @login_required
 def dashboard():
     user_count = User.query.count()
     return render_template('dashboard.html', user=current_user, user_count=user_count)
 
-@app.route('/')
-def home():
-    return render_template('index.html', user=current_user)
-
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get data from the request
         data = request.get_json()
         print("📩 Received data:", data)
 
-        # Convert to DataFrame for processing
         input_data = pd.DataFrame([data])
-
-        # Get prediction
         prediction, probability, risk_level = predict_loan_default(input_data)
-        print(f"✅ Prediction: {prediction}, Probability: {probability}, Risk Level: {risk_level}")
-
+        
         return jsonify({
             'prediction': int(prediction),
             'probability': float(probability),
@@ -316,47 +312,16 @@ def predict():
 
     except Exception as e:
         print("❌ Error in prediction:", str(e))
-        # Return a mock response instead of error
-        try:
-            # Try to extract values from request
-            loan_amount = data.get('LoanAmount', 10000)
-            annual_income = data.get('AnnualIncome', 50000)
+        return jsonify({
+            'error': 'Internal server error',
+            'status': 'error',
+            'note': 'Please check your input values'
+        }), 500
 
-            # Simple fallback calculation
-            risk_score = (loan_amount / annual_income) * 0.4
-            risk_score = max(0.1, min(0.9, risk_score))
-
-            return jsonify({
-                'prediction': 1 if risk_score > 0.5 else 0,
-                'probability': float(risk_score),
-                'risk_level': 'High' if risk_score > 0.7 else 'Medium' if risk_score > 0.4 else 'Low',
-                'status': 'success',
-                'note': '⚠️ Using fallback calculation'
-            })
-        except:
-            return jsonify({
-                'error': 'Internal server error',
-                'status': 'error',
-                'note': 'Please check your input values'
-            }), 500
-
-# Health check endpoint for Render
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy', 'message': '✅ Server is running'})
 
-# Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    db.session.rollback()
-    return render_template('500.html'), 500
-
 if __name__ == '__main__':
-    # Use Render's port environment variable or default to 5000
     port = int(os.environ.get('PORT', 5000))
-    # Run in production mode (debug=False)
     app.run(host='0.0.0.0', port=port, debug=False)
