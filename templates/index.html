@@ -1,883 +1,542 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loan Default Prediction</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #4ca1af;
-            --accent: #ff6b6b;
-            --light: #f8f9fa;
-            --dark: #343a40;
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-        }
+{% extends "layout.html" %}
 
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--dark);
-            line-height: 1.6;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 3rem 0;
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.1' d='M0,128L48,117.3C96,107,192,85,288,112C384,139,480,213,576,218.7C672,224,768,160,864,138.7C960,117,1056,139,1152,149.3C1248,160,1344,160,1392,160L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
-            background-size: cover;
-            background-position: center;
-        }
-
-        .card {
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            border: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            border-radius: 12px 12px 0 0 !important;
-            padding: 1rem 1.5rem;
-            font-weight: 600;
-        }
-
-        .metric-card {
-            text-align: center;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .metric-card:hover {
-            transform: scale(1.03);
-        }
-
-        .metric-value {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin: 10px 0;
-        }
-
-        .metric-card p {
-            color: #6c757d;
-            margin-bottom: 0;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 320px;
-            margin-bottom: 30px;
-        }
-
-        .form-label {
-            font-weight: 500;
-            color: var(--primary);
-            margin-bottom: 8px;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            padding: 12px 15px;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--secondary);
-            box-shadow: 0 0 0 0.25rem rgba(76, 161, 175, 0.25);
-        }
-
-        .btn-predict {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border: none;
-            padding: 12px 30px;
-            font-weight: 600;
-            border-radius: 8px;
-            color: white;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-        }
-
-        .btn-predict:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(44, 62, 80, 0.3);
-            color: white;
-        }
-
-        .btn-predict:active {
-            transform: translateY(0);
-        }
-
-        .result-box {
-            display: none;
-            padding: 25px;
-            border-radius: 12px;
-            margin-top: 25px;
-            text-align: center;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(10px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto;
-            border: 4px solid rgba(76, 161, 175, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid var(--secondary);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        footer {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 1.5rem 0;
-            margin-top: 3rem;
-        }
-
-        .nav-tabs {
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 20px;
-        }
-
-        .nav-tabs .nav-link {
-            color: var(--dark);
-            font-weight: 500;
-            border: none;
-            border-radius: 8px 8px 0 0;
-            padding: 10px 20px;
-            margin-right: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-tabs .nav-link:hover {
-            border-color: transparent;
-            background-color: rgba(76, 161, 175, 0.1);
-        }
-
-        .nav-tabs .nav-link.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            border: none;
-        }
-
-        .tab-content {
-            padding: 20px 0;
-        }
-
-        .tooltip-icon {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            line-height: 18px;
-            text-align: center;
-            border-radius: 50%;
-            background-color: var(--secondary);
-            color: white;
-            font-size: 12px;
-            margin-left: 5px;
-            cursor: help;
-        }
-
-        .progress {
-            height: 25px;
-            border-radius: 12px;
-            margin: 15px 0;
-        }
-
-        .progress-bar {
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feature-importance-bar {
-            background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
-            height: 28px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            color: white;
-            padding-left: 15px;
-            display: flex;
-            align-items: center;
-            transition: transform 0.2s ease;
-        }
-
-        .feature-importance-bar:hover {
-            transform: scale(1.02);
-        }
-
-        .alert {
-            border: none;
-            border-radius: 12px;
-        }
-
-        .alert-success {
-            background-color: rgba(40, 167, 69, 0.15);
-            color: #155724;
-        }
-
-        .alert-warning {
-            background-color: rgba(255, 193, 7, 0.15);
-            color: #856404;
-        }
-
-        .alert-danger {
-            background-color: rgba(220, 53, 69, 0.15);
-            color: #721c24;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .header {
-                padding: 2rem 0;
-            }
-            
-            .display-4 {
-                font-size: 2.5rem;
-            }
-            
-            .metric-value {
-                font-size: 1.8rem;
-            }
-            
-            .chart-container {
-                height: 250px;
-            }
-            
-            .btn-predict {
-                width: 100%;
-            }
-        }
-
-        /* Animation for metrics */
-        @keyframes countUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .metric-card {
-            animation: countUp 0.6s ease-out;
-        }
-
-        .metric-card:nth-child(1) { animation-delay: 0.1s; }
-        .metric-card:nth-child(2) { animation-delay: 0.2s; }
-        .metric-card:nth-child(3) { animation-delay: 0.3s; }
-        .metric-card:nth-child(4) { animation-delay: 0.4s; }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary);
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="header text-center">
-        <div class="container">
-            <h1 class="display-4 fw-bold">Loan Default Prediction</h1>
-            <p class="lead">Advanced machine learning to assess loan default risk</p>
-        </div>
-    </div>
-
+{% block content %}
+<div class="header text-center">
     <div class="container">
-        <!-- Tabs Navigation -->
-        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Overview</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button" role="tab">Model Analysis</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="predict-tab" data-bs-toggle="tab" data-bs-target="#predict" type="button" role="tab">Predict Default</button>
-            </li>
-        </ul>
+        <h1 class="display-4 fw-bold">Loan Default Prediction</h1>
+        <p class="lead">Advanced machine learning to assess loan default risk</p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Overview</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="analysis-tab" data-bs-toggle="tab" data-bs-target="#analysis" type="button" role="tab">Model Analysis</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="predict-tab" data-bs-toggle="tab" data-bs-target="#predict" type="button" role="tab">Predict Default</button>
+        </li>
+    </ul>
+    
+    <!-- Tabs Content -->
+    <div class="tab-content" id="myTabContent">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title mb-0">Project Overview</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>This application uses a Logistic Regression model trained on financial data to predict the probability of loan default based on various financial and demographic factors.</p>
+                            <p>The model was trained on a dataset containing information about customers and their loans, with the target variable being CreditScore which indicates default risk.</p>
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h5>Key Features:</h5>
+                                    <ul>
+                                        <li>Predicts likelihood of loan default</li>
+                                        <li>Identifies key risk factors</li>
+                                        <li>Provides actionable insights</li>
+                                        <li>Visualizes model performance</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Model Details:</h5>
+                                    <ul>
+                                        <li>Algorithm: Logistic Regression</li>
+                                        <li>Training data: 40,000+ loan records</li>
+                                        <li>Features: 20+ financial indicators</li>
+                                        <li>Preprocessing: Standard scaling & encoding</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Accuracy</h5>
+                            <div class="metric-value">87.2%</div>
+                            <p class="text-muted">Model prediction accuracy</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h5 class="card-title">ROC-AUC</h5>
+                            <div class="metric-value">0.932</div>
+                            <p class="text-muted">Classification performance</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Precision</h5>
+                            <div class="metric-value">0.85</div>
+                            <p class="text-muted">Default detection precision</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card metric-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Recall</h5>
+                            <div class="metric-value">0.82</div>
+                            <p class="text-muted">Default detection recall</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
-        <!-- Tabs Content -->
-        <div class="tab-content" id="myTabContent">
-            <!-- Overview Tab -->
-            <div class="tab-pane fade show active" id="overview" role="tabpanel">
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3 class="card-title mb-0">Project Overview</h3>
-                            </div>
-                            <div class="card-body">
-                                <p>This application uses a Logistic Regression model trained on financial data to predict the probability of loan default based on various financial and demographic factors.</p>
-                                <p>The model was trained on a dataset containing information about customers and their loans, with the target variable being CreditScore which indicates default risk.</p>
-                                <div class="row mt-4">
-                                    <div class="col-md-6">
-                                        <h5>Key Features:</h5>
-                                        <ul>
-                                            <li>Predicts likelihood of loan default</li>
-                                            <li>Identifies key risk factors</li>
-                                            <li>Provides actionable insights</li>
-                                            <li>Visualizes model performance</li>
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h5>Model Details:</h5>
-                                        <ul>
-                                            <li>Algorithm: Logistic Regression</li>
-                                            <li>Training data: 40,000+ loan records</li>
-                                            <li>Features: 20+ financial indicators</li>
-                                            <li>Preprocessing: Standard scaling & encoding</li>
-                                        </ul>
-                                    </div>
-                                </div>
+        <!-- Analysis Tab -->
+        <div class="tab-pane fade" id="analysis" role="tabpanel">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Loan Default Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="distributionChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row mb-4">
-                    <div class="col-md-3 col-sm-6">
-                        <div class="card metric-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Accuracy</h5>
-                                <div class="metric-value">87.2%</div>
-                                <p class="text-muted">Model prediction accuracy</p>
-                            </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Feature Correlation Heatmap</h5>
                         </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="card metric-card">
-                            <div class="card-body">
-                                <h5 class="card-title">ROC-AUC</h5>
-                                <div class="metric-value">0.932</div>
-                                <p class="text-muted">Classification performance</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="card metric-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Precision</h5>
-                                <div class="metric-value">0.85</div>
-                                <p class="text-muted">Default detection precision</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="card metric-card">
-                            <div class="card-body">
-                                <h5 class="card-title">Recall</h5>
-                                <div class="metric-value">0.82</div>
-                                <p class="text-muted">Default detection recall</p>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="correlationChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Analysis Tab -->
-            <div class="tab-pane fade" id="analysis" role="tabpanel">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Loan Default Distribution</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-container">
-                                    <canvas id="distributionChart"></canvas>
-                                </div>
-                            </div>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Top 10 Important Features</h5>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Feature Correlation Heatmap</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="chart-container">
-                                    <canvas id="correlationChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Top 10 Important Features</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="featureImportance">
-                                    <!-- Feature importance bars will be generated here -->
-                                </div>
+                        <div class="card-body">
+                            <div id="featureImportance">
+                                <!-- Feature importance bars will be generated here -->
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Predict Tab -->
-            <div class="tab-pane fade" id="predict" role="tabpanel">
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Default Prediction</h5>
-                            </div>
-                            <div class="card-body">
-                                <form id="predictionForm">
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Loan Amount ($)</label>
-                                            <input type="number" class="form-control" id="loanAmount" required min="1000" max="1000000" placeholder="e.g., 15000">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Interest Rate (%)</label>
-                                            <input type="number" step="0.01" class="form-control" id="interestRate" required min="1" max="30" placeholder="e.g., 7.5">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Term (months)</label>
-                                            <select class="form-select" id="term">
-                                                <option value="36">36 months</option>
-                                                <option value="60" selected>60 months</option>
-                                                <option value="84">84 months</option>
-                                            </select>
-                                        </div>
+        </div>
+        
+        <!-- Predict Tab -->
+        <div class="tab-pane fade" id="predict" role="tabpanel">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Default Prediction</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="predictionForm">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Loan Amount ($)</label>
+                                        <input type="number" class="form-control" id="loanAmount" required min="1000" max="1000000" placeholder="e.g., 15000">
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Employment Length (years)</label>
-                                            <input type="number" class="form-control" id="empLength" required min="0" max="50" placeholder="e.g., 5">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Annual Income ($)</label>
-                                            <input type="number" class="form-control" id="annualIncome" required min="10000" max="1000000" placeholder="e.g., 60000">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Debt-to-Income Ratio 
-                                                <span class="tooltip-icon" title="Your monthly debt payments divided by your gross monthly income">i</span>
-                                            </label>
-                                            <input type="number" step="0.01" class="form-control" id="dti" required min="0" max="100" placeholder="e.g., 25.5">
-                                        </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Interest Rate (%)</label>
+                                        <input type="number" step="0.01" class="form-control" id="interestRate" required min="1" max="30" placeholder="e.g., 7.5">
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">FICO Score</label>
-                                            <input type="number" class="form-control" id="fico" required min="300" max="850" value="700">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Number of Open Accounts</label>
-                                            <input type="number" class="form-control" id="openAccounts" required min="0" max="50" value="5">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Home Ownership</label>
-                                            <select class="form-select" id="homeOwnership">
-                                                <option value="RENT">Rent</option>
-                                                <option value="MORTGAGE" selected>Mortgage</option>
-                                                <option value="OWN">Own</option>
-                                                <option value="OTHER">Other</option>
-                                            </select>
-                                        </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Term (months)</label>
+                                        <select class="form-select" id="term">
+                                            <option value="36">36 months</option>
+                                            <option value="60" selected>60 months</option>
+                                            <option value="84">84 months</option>
+                                        </select>
                                     </div>
-                                    <div class="text-center mt-3">
-                                        <button type="submit" class="btn btn-predict">Predict Default Probability</button>
-                                    </div>
-                                </form>
-                                
-                                <div class="loading" id="loadingIndicator">
-                                    <div class="spinner"></div>
-                                    <p class="mt-2">Processing your request...</p>
                                 </div>
-                                
-                                <div id="predictionResult" class="result-box"></div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Employment Length (years)</label>
+                                        <input type="number" class="form-control" id="empLength" required min="0" max="50" placeholder="e.g., 5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Annual Income ($)</label>
+                                        <input type="number" class="form-control" id="annualIncome" required min="10000" max="1000000" placeholder="e.g., 60000">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Debt-to-Income Ratio 
+                                            <span class="tooltip-icon" title="Your monthly debt payments divided by your gross monthly income">i</span>
+                                        </label>
+                                        <input type="number" step="0.01" class="form-control" id="dti" required min="0" max="100" placeholder="e.g., 25.5">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">FICO Score</label>
+                                        <input type="number" class="form-control" id="fico" required min="300" max="850" value="700">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Number of Open Accounts</label>
+                                        <input type="number" class="form-control" id="openAccounts" required min="0" max="50" value="5">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Home Ownership</label>
+                                        <select class="form-select" id="homeOwnership">
+                                            <option value="RENT">Rent</option>
+                                            <option value="MORTGAGE" selected>Mortgage</option>
+                                            <option value="OWN">Own</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <button type="submit" class="btn btn-predict">Predict Default Probability</button>
+                                </div>
+                            </form>
+                            
+                            <div class="loading" id="loadingIndicator">
+                                <div class="spinner"></div>
+                                <p class="mt-2">Processing your request...</p>
                             </div>
+                            
+                            <div id="predictionResult" class="result-box"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <footer class="text-center">
-        <div class="container">
-            <p>Loan Default Prediction Model &copy; 2023 | Machine Learning Powered</p>
-        </div>
-    </footer>
+<footer class="text-center">
+    <div class="container">
+        <p>Loan Default Prediction Model &copy; 2023 | Machine Learning Powered</p>
+    </div>
+</footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Wait for the DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize tooltips
-            const tooltipElements = document.querySelectorAll('.tooltip-icon');
-            tooltipElements.forEach(el => {
-                el.addEventListener('mouseenter', showTooltip);
-                el.addEventListener('mouseleave', hideTooltip);
-            });
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Wait for the DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        const tooltipElements = document.querySelectorAll('.tooltip-icon');
+        tooltipElements.forEach(el => {
+            el.addEventListener('mouseenter', showTooltip);
+            el.addEventListener('mouseleave', hideTooltip);
+        });
+        
+        // Initialize charts
+        initializeCharts();
+        
+        // Initialize feature importance visualization
+        initializeFeatureImportance();
+        
+        // Form submission handler
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            // Initialize charts
-            initializeCharts();
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('predictionResult').style.display = 'none';
             
-            // Initialize feature importance visualization
-            initializeFeatureImportance();
+            // Get form values
+            const formData = {
+                LoanAmount: parseFloat(document.getElementById('loanAmount').value),
+                InterestRate: parseFloat(document.getElementById('interestRate').value),
+                Term: document.getElementById('term').value,
+                EmploymentLength: parseFloat(document.getElementById('empLength').value),
+                AnnualIncome: parseFloat(document.getElementById('annualIncome').value),
+                DebtToIncomeRatio: parseFloat(document.getElementById('dti').value),
+                FicoScore: parseFloat(document.getElementById('fico').value),
+                OpenAccounts: parseFloat(document.getElementById('openAccounts').value),
+                HomeOwnership: document.getElementById('homeOwnership').value
+            };
             
-            // Form submission handler
-            document.getElementById('predictionForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
+            try {
+                // Validate form data
+                if (!validateFormData(formData)) {
+                    throw new Error('Please check your input values. All fields are required.');
+                }
                 
-                // Show loading indicator
-                document.getElementById('loadingIndicator').style.display = 'block';
-                document.getElementById('predictionResult').style.display = 'none';
+                // Make API call to Flask backend
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
                 
-                // Get form values
-                const formData = {
-                    LoanAmount: parseFloat(document.getElementById('loanAmount').value),
-                    InterestRate: parseFloat(document.getElementById('interestRate').value),
-                    Term: document.getElementById('term').value,
-                    EmploymentLength: parseFloat(document.getElementById('empLength').value),
-                    AnnualIncome: parseFloat(document.getElementById('annualIncome').value),
-                    DebtToIncomeRatio: parseFloat(document.getElementById('dti').value),
-                    FicoScore: parseFloat(document.getElementById('fico').value),
-                    OpenAccounts: parseFloat(document.getElementById('openAccounts').value),
-                    HomeOwnership: document.getElementById('homeOwnership').value
-                };
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
                 
-                try {
-                    // Validate form data
-                    if (!validateFormData(formData)) {
-                        throw new Error('Please check your input values. All fields are required.');
-                    }
-                    
-                    // Make API call to Flask backend
-                    const response = await fetch('/predict', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    displayResult(result);
+                } else {
+                    throw new Error(result.error || 'Unknown error occurred');
+                }
+                
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        });
+        
+        // Add input validation as users type
+        const numberInputs = document.querySelectorAll('input[type="number"]');
+        numberInputs.forEach(input => {
+            input.addEventListener('input', validateNumberInput);
+        });
+    });
+
+    function validateFormData(formData) {
+        // Check for required fields
+        if (!formData.LoanAmount || !formData.AnnualIncome || !formData.InterestRate || !formData.DebtToIncomeRatio) {
+            return false;
+        }
+        
+        // Validate ranges
+        if (formData.LoanAmount < 1000 || formData.LoanAmount > 1000000) return false;
+        if (formData.AnnualIncome < 10000 || formData.AnnualIncome > 1000000) return false;
+        if (formData.InterestRate < 1 || formData.InterestRate > 30) return false;
+        if (formData.DebtToIncomeRatio < 0 || formData.DebtToIncomeRatio > 100) return false;
+        if (formData.FicoScore < 300 || formData.FicoScore > 850) return false;
+        
+        return true;
+    }
+
+    function validateNumberInput(e) {
+        const input = e.target;
+        const min = parseFloat(input.min) || 0;
+        const max = parseFloat(input.max) || Infinity;
+        const value = parseFloat(input.value);
+        
+        if (isNaN(value) || value < min || value > max) {
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    }
+
+    function showTooltip(e) {
+        const tooltipText = e.target.getAttribute('title');
+        if (!tooltipText) return;
+        
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'custom-tooltip';
+        tooltip.innerHTML = tooltipText;
+        tooltip.style.position = 'absolute';
+        tooltip.style.background = 'rgba(44, 62, 80, 0.9)';
+        tooltip.style.color = 'white';
+        tooltip.style.padding = '8px 12px';
+        tooltip.style.borderRadius = '4px';
+        tooltip.style.fontSize = '14px';
+        tooltip.style.zIndex = '1000';
+        tooltip.style.maxWidth = '250px';
+        
+        // Position tooltip
+        const rect = e.target.getBoundingClientRect();
+        tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+        tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+        
+        document.body.appendChild(tooltip);
+        e.target.removeAttribute('title');
+    }
+
+    function hideTooltip(e) {
+        const tooltips = document.querySelectorAll('.custom-tooltip');
+        tooltips.forEach(tooltip => tooltip.remove());
+        
+        // Restore title attribute for next time
+        const tooltipText = e.target.getAttribute('data-original-title');
+        if (tooltipText) {
+            e.target.setAttribute('title', tooltipText);
+        }
+    }
+
+    function initializeCharts() {
+        // Distribution Chart
+        const distCtx = document.getElementById('distributionChart');
+        if (distCtx) {
+            const distChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Non-Default', 'Default'],
+                    datasets: [{
+                        label: 'Number of Loans',
+                        data: [32000, 8000],
+                        backgroundColor: ['#4ca1af', '#2c3e50'],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
                         },
-                        body: JSON.stringify(formData)
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Server error: ${response.status}`);
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw.toLocaleString()} (${((context.raw/40000)*100).toFixed(1)}%)`;
+                                }
+                            }
+                        }
                     }
-                    
-                    const result = await response.json();
-                    
-                    if (result.status === 'success') {
-                        displayResult(result);
-                    } else {
-                        throw new Error(result.error || 'Unknown error occurred');
-                    }
-                    
-                } catch (error) {
-                    displayError(error.message);
-                } finally {
-                    // Hide loading indicator
-                    document.getElementById('loadingIndicator').style.display = 'none';
                 }
             });
-            
-            // Add input validation as users type
-            const numberInputs = document.querySelectorAll('input[type="number"]');
-            numberInputs.forEach(input => {
-                input.addEventListener('input', validateNumberInput);
+        }
+        
+        // Correlation Chart
+        const corrCtx = document.getElementById('correlationChart');
+        if (corrCtx) {
+            const corrChart = new Chart(corrCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Income', 'Loan Amount', 'Interest Rate', 'Term', 'Employment', 'FICO Score'],
+                    datasets: [{
+                        label: 'Correlation with Default',
+                        data: [-0.32, 0.45, 0.67, 0.21, -0.29, -0.58],
+                        backgroundColor: '#4ca1af',
+                        borderWidth: 0,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            min: -1,
+                            title: {
+                                display: true,
+                                text: 'Correlation Coefficient'
+                            }
+                        }
+                    }
+                }
             });
-        });
-
-        function validateFormData(formData) {
-            // Check for required fields
-            if (!formData.LoanAmount || !formData.AnnualIncome || !formData.InterestRate || !formData.DebtToIncomeRatio) {
-                return false;
-            }
-            
-            // Validate ranges
-            if (formData.LoanAmount < 1000 || formData.LoanAmount > 1000000) return false;
-            if (formData.AnnualIncome < 10000 || formData.AnnualIncome > 1000000) return false;
-            if (formData.InterestRate < 1 || formData.InterestRate > 30) return false;
-            if (formData.DebtToIncomeRatio < 0 || formData.DebtToIncomeRatio > 100) return false;
-            if (formData.FicoScore < 300 || formData.FicoScore > 850) return false;
-            
-            return true;
         }
+    }
 
-        function validateNumberInput(e) {
-            const input = e.target;
-            const min = parseFloat(input.min) || 0;
-            const max = parseFloat(input.max) || Infinity;
-            const value = parseFloat(input.value);
-            
-            if (isNaN(value) || value < min || value > max) {
-                input.classList.add('is-invalid');
-            } else {
-                input.classList.remove('is-invalid');
-            }
+    function initializeFeatureImportance() {
+        const features = [
+            {name: 'Interest Rate', importance: 0.92},
+            {name: 'Debt-to-Income Ratio', importance: 0.87},
+            {name: 'Annual Income', importance: 0.78},
+            {name: 'FICO Score', importance: 0.76},
+            {name: 'Loan Amount', importance: 0.75},
+            {name: 'Employment Length', importance: 0.68},
+            {name: 'Number of Open Accounts', importance: 0.62},
+            {name: 'Home Ownership', importance: 0.55},
+            {name: 'Loan Term', importance: 0.48},
+            {name: 'Years of Credit History', importance: 0.38}
+        ];
+
+        const featureContainer = document.getElementById('featureImportance');
+        if (featureContainer) {
+            features.forEach(feature => {
+                const barDiv = document.createElement('div');
+                barDiv.className = 'feature-importance-bar';
+                barDiv.style.width = `${feature.importance * 100}%`;
+                barDiv.innerHTML = `<span>${feature.name} (${feature.importance.toFixed(2)})</span>`;
+                featureContainer.appendChild(barDiv);
+            });
         }
+    }
 
-        function showTooltip(e) {
-            const tooltipText = e.target.getAttribute('title');
-            if (!tooltipText) return;
-            
-            // Create tooltip element
-            const tooltip = document.createElement('div');
-            tooltip.className = 'custom-tooltip';
-            tooltip.innerHTML = tooltipText;
-            tooltip.style.position = 'absolute';
-            tooltip.style.background = 'rgba(44, 62, 80, 0.9)';
-            tooltip.style.color = 'white';
-            tooltip.style.padding = '8px 12px';
-            tooltip.style.borderRadius = '4px';
-            tooltip.style.fontSize = '14px';
-            tooltip.style.zIndex = '1000';
-            tooltip.style.maxWidth = '250px';
-            
-            // Position tooltip
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-            tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
-            
-            document.body.appendChild(tooltip);
-            e.target.removeAttribute('title');
-        }
-
-        function hideTooltip(e) {
-            const tooltips = document.querySelectorAll('.custom-tooltip');
-            tooltips.forEach(tooltip => tooltip.remove());
-            
-            // Restore title attribute for next time
-            const tooltipText = e.target.getAttribute('data-original-title');
-            if (tooltipText) {
-                e.target.setAttribute('title', tooltipText);
-            }
-        }
-
-        function initializeCharts() {
-            // Distribution Chart
-            const distCtx = document.getElementById('distributionChart');
-            if (distCtx) {
-                const distChart = new Chart(distCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Non-Default', 'Default'],
-                        datasets: [{
-                            label: 'Number of Loans',
-                            data: [32000, 8000],
-                            backgroundColor: ['#4ca1af', '#2c3e50'],
-                            borderWidth: 0,
-                            hoverOffset: 15
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.label}: ${context.raw.toLocaleString()} (${((context.raw/40000)*100).toFixed(1)}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Correlation Chart
-            const corrCtx = document.getElementById('correlationChart');
-            if (corrCtx) {
-                const corrChart = new Chart(corrCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Income', 'Loan Amount', 'Interest Rate', 'Term', 'Employment', 'FICO Score'],
-                        datasets: [{
-                            label: 'Correlation with Default',
-                            data: [-0.32, 0.45, 0.67, 0.21, -0.29, -0.58],
-                            backgroundColor: '#4ca1af',
-                            borderWidth: 0,
-                            borderRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 1,
-                                min: -1,
-                                title: {
-                                    display: true,
-                                    text: 'Correlation Coefficient'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function initializeFeatureImportance() {
-            const features = [
-                {name: 'Interest Rate', importance: 0.92},
-                {name: 'Debt-to-Income Ratio', importance: 0.87},
-                {name: 'Annual Income', importance: 0.78},
-                {name: 'FICO Score', importance: 0.76},
-                {name: 'Loan Amount', importance: 0.75},
-                {name: 'Employment Length', importance: 0.68},
-                {name: 'Number of Open Accounts', importance: 0.62},
-                {name: 'Home Ownership', importance: 0.55},
-                {name: 'Loan Term', importance: 0.48},
-                {name: 'Years of Credit History', importance: 0.38}
-            ];
-
-            const featureContainer = document.getElementById('featureImportance');
-            if (featureContainer) {
-                features.forEach(feature => {
-                    const barDiv = document.createElement('div');
-                    barDiv.className = 'feature-importance-bar';
-                    barDiv.style.width = `${feature.importance * 100}%`;
-                    barDiv.innerHTML = `<span>${feature.name} (${feature.importance.toFixed(2)})</span>`;
-                    featureContainer.appendChild(barDiv);
-                });
-            }
-        }
-
-        function displayResult(result) {
-            const resultBox = document.getElementById('predictionResult');
-            resultBox.style.display = 'block';
-            
-            const riskPercent = (result.probability * 100).toFixed(1);
-            const predictionText = result.prediction === 1 ? "High Default Risk" : "Low Default Risk";
-            
-            if (result.risk_level === "High") {
-                resultBox.innerHTML = `<h4 class="text-danger">${predictionText}: ${riskPercent}%</h4>
-                                      <p>This loan application shows a high risk of default based on our analysis.</p>
-                                      <div class="progress my-3">
-                                        <div class="progress-bar bg-danger" role="progressbar" style="width: ${riskPercent}%;" 
-                                             aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
-                                      </div>
-                                      <p>Recommendation: <strong>Reject application</strong> or require significant collateral</p>`;
-                resultBox.className = 'result-box alert alert-danger';
-            } else if (result.risk_level === "Medium") {
-                resultBox.innerHTML = `<h4 class="text-warning">${predictionText}: ${riskPercent}%</h4>
-                                      <p>This loan application shows a moderate risk of default.</p>
-                                      <div class="progress my-3">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: ${riskPercent}%;" 
-                                             aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
-                                      </div>
-                                      <p>Recommendation: <strong>Approve with higher interest rate</strong> or require collateral</p>`;
-                resultBox.className = 'result-box alert alert-warning';
-            } else {
-                resultBox.innerHTML = `<h4 class="text-success">${predictionText}: ${riskPercent}%</h4>
-                                      <p>This loan application shows a low risk of default.</p>
-                                      <div class="progress my-3">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: ${riskPercent}%;" 
-                                             aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
-                                      </div>
-                                      <p>Recommendation: <strong>Approve application</strong> with standard terms</p>`;
-                resultBox.className = 'result-box alert alert-success';
-            }
-            
-            // Animate the progress bar
-            animateProgressBar();
-        }
-
-        function animateProgressBar() {
-            const progressBar = document.querySelector('.progress-bar');
-            const width = progressBar.style.width;
-            progressBar.style.width = '0%';
-            
-            setTimeout(() => {
-                progressBar.style.transition = 'width 1s ease-in-out';
-                progressBar.style.width = width;
-            }, 100);
-        }
-
-        function displayError(error) {
-            const resultBox = document.getElementById('predictionResult');
-            resultBox.style.display = 'block';
-            resultBox.innerHTML = `<h4 class="text-danger">Error</h4>
-                                  <p>${error}</p>
-                                  <p>Please check your inputs and try again.</p>`;
+    function displayResult(result) {
+        const resultBox = document.getElementById('predictionResult');
+        resultBox.style.display = 'block';
+        
+        const riskPercent = (result.probability * 100).toFixed(1);
+        const predictionText = result.prediction === 1 ? "High Default Risk" : "Low Default Risk";
+        
+        if (result.risk_level === "High") {
+            resultBox.innerHTML = `<h4 class="text-danger">${predictionText}: ${riskPercent}%</h4>
+                                  <p>This loan application shows a high risk of default based on our analysis.</p>
+                                  <div class="progress my-3">
+                                    <div class="progress-bar bg-danger" role="progressbar" style="width: ${riskPercent}%;" 
+                                         aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
+                                  </div>
+                                  <p>Recommendation: <strong>Reject application</strong> or require significant collateral</p>`;
             resultBox.className = 'result-box alert alert-danger';
+        } else if (result.risk_level === "Medium") {
+            resultBox.innerHTML = `<h4 class="text-warning">${predictionText}: ${riskPercent}%</h4>
+                                  <p>This loan application shows a moderate risk of default.</p>
+                                  <div class="progress my-3">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: ${riskPercent}%;" 
+                                         aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
+                                  </div>
+                                  <p>Recommendation: <strong>Approve with higher interest rate</strong> or require collateral</p>`;
+            resultBox.className = 'result-box alert alert-warning';
+        } else {
+            resultBox.innerHTML = `<h4 class="text-success">${predictionText}: ${riskPercent}%</h4>
+                                  <p>This loan application shows a low risk of default.</p>
+                                  <div class="progress my-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${riskPercent}%;" 
+                                         aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
+                                  </div>
+                                  <p>Recommendation: <strong>Approve application</strong> with standard terms</p>`;
+            resultBox.className = 'result-box alert alert-success';
         }
+        
+        // Animate the progress bar
+        animateProgressBar();
+    }
 
-        // Utility function to format numbers with commas
-        function formatNumber(number) {
-            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }
-    </script>
-</body>
-</html>
+    function animateProgressBar() {
+        const progressBar = document.querySelector('.progress-bar');
+        const width = progressBar.style.width;
+        progressBar.style.width = '0%';
+        
+        setTimeout(() => {
+            progressBar.style.transition = 'width 1s ease-in-out';
+            progressBar.style.width = width;
+        }, 100);
+    }
+
+    function displayError(error) {
+        const resultBox = document.getElementById('predictionResult');
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<h4 class="text-danger">Error</h4>
+                              <p>${error}</p>
+                              <p>Please check your inputs and try again.</p>`;
+        resultBox.className = 'result-box alert alert-danger';
+    }
+
+    // Utility function to format numbers with commas
+    function formatNumber(number) {
+        return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+</script>
+{% endblock %}
