@@ -207,7 +207,12 @@ except ImportError as e:
 
 # Create database tables and admin user
 with app.app_context():
+    # Drop all tables to reset the database (remove this in production)
+    db.drop_all()
+    
+    # Create all tables
     db.create_all()
+    
     # Create admin user if not exists
     if not User.query.filter_by(username='admin').first():
         admin_user = User(
