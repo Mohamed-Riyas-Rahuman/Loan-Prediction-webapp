@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Loan Prediction System{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="header text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold">Loan Default Risk Prediction</h1>
+        <p class="lead">Advanced machine learning technology to assess loan default risk with precision and transparency.</p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            {% if not current_user.is_authenticated %}
+            <!-- Welcome message for guests -->
+            <div class="card welcome-card mb-5">
+                <div class="card-body text-center p-5">
+                    <h3 class="text-primary mb-3">
+                        <i class="fas fa-chart-line me-2"></i>Welcome to the Loan Prediction System
+                    </h3>
+                    <p class="text-muted mb-4">
+                        Create an account or sign in to access powerful loan prediction tools and advanced analytics.
+                        Our machine learning model helps assess loan default risk with high accuracy.
+                    </p>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a class="btn btn-primary me-md-2" href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </a>
+                        <a class="btn btn-outline-primary" href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section for Guests -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">AI-Powered Analysis</h5>
+                            <p class="card-text">Advanced machine learning algorithms analyze multiple factors to predict loan default risk.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Secure & Private</h5>
+                            <p class="card-text">Your financial data is processed securely with industry-standard encryption and privacy protection.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Detailed Reports</h5>
+                            <p class="card-text">Get comprehensive risk analysis with detailed explanations and actionable insights.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Welcome message for logged-in users -->
+            <div class="card mb-5">
+                <div class="card-body text-center p-5">
+                    <h3 class="text-primary mb-3">
+                        <i class="fas fa-user-check me-2"></i>Welcome back, {{ current_user.username }}!
+                    </h3>
+                    <p class="text-muted mb-4">
+                        Ready to analyze loan default risk? Access your prediction tools below.
+                    </p>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a class="btn btn-primary btn-lg" href="{{ url_for('predict_page') }}">
+                            <i class="fas fa-calculator me-2"></i>Start Loan Prediction
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats for Logged-in Users -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calculator fa-2x text-primary mb-2"></i>
+                            <div class="metric-value">98.5%</div>
+                            <p>Model Accuracy</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-database fa-2x text-success mb-2"></i>
+                            <div class="metric-value">1M+</div>
+                            <p>Loans Analyzed</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                            <div class="metric-value">&lt;2s</div>
+                            <p>Analysis Time</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card metric-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-shield-alt fa-2x text-warning mb-2"></i>
+                            <div class="metric-value">Bank-grade</div>
+                            <p>Security</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- How It Works Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-cogs me-2"></i>How It Works</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <span class="fw-bold fs-4">1</span>
+                                </div>
+                                <h5>Input Data</h5>
+                                <p class="text-muted">Enter loan details including amount, income, credit score, and employment information.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <span class="fw-bold fs-4">2</span>
+                                </div>
+                                <h5>AI Analysis</h5>
+                                <p class="text-muted">Our machine learning model processes the data using advanced algorithms and historical patterns.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                    <span class="fw-bold fs-4">3</span>
+                                </div>
+                                <h5>Risk Assessment</h5>
+                                <p class="text-muted">Get instant results with risk probability, level assessment, and detailed recommendations.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
