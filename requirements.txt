@@ -1,10 +1,16 @@
+<<<<<<< HEAD
 setuptools>=68.0.0
 wheel>=0.40.0
+=======
+>>>>>>> f120ce5ff2f610975eb6522b214bf4d1cadfdca9
 Flask==2.3.3
 Flask-Login==0.6.3
 Flask-SQLAlchemy==3.1.1
 Flask-CORS==4.0.0
+<<<<<<< HEAD
 Flask-Mail
+=======
+>>>>>>> f120ce5ff2f610975eb6522b214bf4d1cadfdca9
 Werkzeug==2.3.7
 python-dotenv==1.0.0
 gunicorn==20.1.0
@@ -15,3 +21,20 @@ SQLAlchemy==2.0.23
 greenlet==3.0.3
 joblib
 psycopg2-binary
+<<<<<<< HEAD
+=======
+Flask==2.3.3
+Flask-CORS==4.0.0
+Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
+greenlet==3.0.3
+gunicorn==20.1.0
+joblib
+numpy==1.24.3
+pandas==1.5.3
+psycopg2-binary
+python-dotenv==1.0.0
+scikit-learn==1.2.2
+SQLAlchemy==2.0.23
+Werkzeug==2.3.7
+>>>>>>> f120ce5ff2f610975eb6522b214bf4d1cadfdca9

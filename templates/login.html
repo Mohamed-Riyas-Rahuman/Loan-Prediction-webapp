@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Loan Prediction System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card shadow-lg border-0 mt-5">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>Welcome Back
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Sign in to your account</p>
+                </div>
+                <div class="card-body p-5">
+                    <form method="POST" action="{{ url_for('login') }}">
+                        <!-- Username/Email Field -->
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   placeholder="Username or Email" required>
+                            <label for="username">Username</label>
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="form-floating mb-4">
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Password" required>
+                            <label for="password">Password</label>
+                        </div>
+
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                                    <label class="form-check-label text-muted small" for="remember">
+                                        Remember me
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-6 text-end">
+                                <a href="#" class="text-primary text-decoration-none small">
+                                    Forgot password?
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </button>
+                        </div>
+
+                        <!-- Divider -->
+                        <hr class="my-4">
+
+                        <!-- Register Link -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Don't have an account?
+                                <a href="{{ url_for('register') }}" class="text-primary text-decoration-none fw-bold">
+                                    Create Account
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Your data is protected with industry-standard security measures.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-focus on username field when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('username').focus();
+});
+
+// Form validation feedback
+document.querySelector('form').addEventListener('submit', function(e) {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!username || !password) {
+        e.preventDefault();
+        alert('Please fill in all required fields.');
+        return false;
+    }
+});
+</script>
+{% endblock %}
