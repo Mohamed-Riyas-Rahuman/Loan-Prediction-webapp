@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Default Risk Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #4ca1af;
+            --accent: #ff6b6b;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.1' d='M0,128L48,117.3C96,107,192,85,288,112C384,139,480,213,576,218.7C672,224,768,160,864,138.7C960,117,1056,139,1152,149.3C1248,160,1344,160,1392,160L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 0.25rem rgba(76, 161, 175, 0.25);
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 8px;
+            color: white;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(44, 62, 80, 0.3);
+            color: white;
+        }
+
+        .result-box {
+            display: none;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(76, 161, 175, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--secondary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+           100% { transform: rotate(360deg); }
+        }
+
+        .tooltip-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            color: white;
+            font-size: 12px;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 12px;
+        }
+
+        .alert-success {
+            background-color: rgba(40, 167, 69, 0.15);
+            color: #155724;
+        }
+
+        .alert-warning {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #856404;
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.15);
+            color: #721c24;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #dee2e6;
+        }
+
+        /* Flash messages styling */
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1100;
+            max-width: 350px;
+        }
+
+        .flash-message {
+            animation: slideInRight 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header {
+                padding: 2rem 0;
+            }
+            
+            .display-4 {
+                font-size: 2.5rem;
+            }
+            
+            .btn-predict {
+                width: 100%;
+            }
+
+            .flash-messages {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-calculator me-2"></i>Loan Prediction System
+            </a>
+            
+            <!-- Authentication buttons -->
+            <div class="navbar-nav ms-auto" id="authButtons">
+                {% if current_user.is_authenticated %}
+                    <span class="navbar-text me-3">Hello, {{ current_user.username }}!</span>
+                    <a class="btn btn-outline-light btn-sm" href="/logout" id="logoutBtn">Logout</a>
+                {% else %}
+                    <span class="navbar-text me-3" id="userGreeting">Hello, Guest!</span>
+                    <a class="btn btn-outline-light btn-sm me-2" href="/register" id="registerBtn">Register</a>
+                    <a class="btn btn-light btn-sm" href="/login" id="loginBtn">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    <div class="flash-messages" id="flashMessages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show flash-message">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Header Section -->
+    <div class="header text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Loan Default Risk Prediction</h1>
+            <p class="lead">Advanced machine learning technology to assess loan default risk with precision and transparency.</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Welcome message for guests -->
+                {% if not current_user.is_authenticated %}
+                <div id="guestWelcome" class="card welcome-card mb-5">
+                    <div class="card-body text-center p-5">
+                        <h3 class="text-primary mb-3">Welcome to the Loan Prediction System</h3>
+                        <p class="text-muted mb-4">
+                            Create an account or sign in to access powerful loan prediction tools and advanced analytics.
+                        </p>
+                        <div class="d-grid gap-2 d-md-block">
+                            <a class="btn btn-primary me-md-2" href="/register">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </a>
+                            <a class="btn btn-outline-primary" href="/login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Loan Prediction Form (shown for authenticated users) -->
+                {% if current_user.is_authenticated %}
+                <div id="predictionSection" class="card mb-5">
+                    <div class="card-header text-center">
+                        <h4 class="mb-0"><i class="fas fa-calculator me-2"></i>Default Prediction</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="predictionForm">
+                            <div class="row g-3">
+                                <!-- Row 1 -->
+                                <div class="col-md-4">
+                                    <label class="form-label">Loan Amount ($)</label>
+                                    <input type="number" class="form-control" id="loanAmount" name="LoanAmount" 
+                                           placeholder="e.g., 15000" required min="1000" max="1000000" step="100">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Employment Length (years)</label>
+                                    <input type="number" class="form-control" id="empLength" name="EmploymentLength" 
+                                           placeholder="e.g., 5" required min="0" max="50" step="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">FICO Score</label>
+                                    <input type="number" class="form-control" id="fico" name="FicoScore" 
+                                           placeholder="700" required min="300" max="850" step="1">
+                                </div>
+                                
+                                <!-- Row 2 -->
+                                <div class="col-md-4">
+                                    <label class="form-label">Interest Rate (%)</label>
+                                    <input type="number" class="form-control" id="interestRate" name="InterestRate" 
+                                           placeholder="e.g., 7.5" required min="1" max="30" step="0.1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Annual Income ($)</label>
+                                    <input type="number" class="form-control" id="annualIncome" name="AnnualIncome" 
+                                           placeholder="e.g., 60000" required min="10000" max="1000000" step="1000">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Number of Open Accounts</label>
+                                    <input type="number" class="form-control" id="openAccounts" name="OpenAccounts" 
+                                           placeholder="5" required min="0" max="50" step="1">
+                                </div>
+                                
+                                <!-- Row 3 -->
+                                <div class="col-md-4">
+                                    <label class="form-label">Term (months)</label>
+                                    <select class="form-select" id="term" name="Term" required>
+                                        <option value="36">36 months</option>
+                                        <option value="60">60 months</option>
+                                        <option value="84">84 months</option>
+
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Debt-to-Income Ratio 
+                                        <i class="fas fa-info-circle tooltip-icon" title="Your total monthly debt payments divided by monthly income"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="dti" name="DebtToIncomeRatio" 
+                                           placeholder="e.g., 25.5" required min="0" max="100" step="0.1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Home Ownership</label>
+                                    <select class="form-select" id="homeOwnership" name="HomeOwnership" required>
+                                        <option value="MORTGAGE" selected>Mortgage</option>
+                                        <option value="RENT">Rent</option>
+                                        <option value="OWN">Own</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-predict">
+                                    <i class="fas fa-chart-line me-2"></i>Predict Default Probability
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loadingIndicator" class="loading">
+                    <div class="spinner"></div>
+                    <p class="mt-3">Analyzing your data... Please wait.</p>
+                </div>
+
+                <!-- Prediction Results -->
+                <div id="predictionResult" class="result-box">
+                    <!-- Results will be populated here -->
+                </div>
+                {% endif %}
+
+                <!-- Features Section -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0">
+                            <div class="card-body text-center p-4">
+                                <div class="text-primary mb-3">
+                                    <i class="fas fa-brain fa-3x"></i>
+                                </div>
+                                <h5 class="card-title">AI-Powered Analysis</h5>
+                                <p class="card-text text-muted">
+                                    Advanced machine learning algorithms analyze multiple financial factors.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0">
+                            <div class="card-body text-center p-4">
+                                <div class="text-success mb-3">
+                                    <i class="fas fa-shield-alt fa-3x"></i>
+                                </div>
+                                <h5 class="card-title">Risk Assessment</h5>
+                                <p class="card-text text-muted">
+                                    Get clear risk categories: High, Medium, or Low with probability scores.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0">
+                            <div class="card-body text-center p-4">
+                                <div class="text-info mb-3">
+                                    <i class="fas fa-chart-bar fa-3x"></i>
+                                </div>
+                                <h5 class="card-title">Instant Results</h5>
+                                <p class="card-text text-muted">
+                                    Real-time predictions with detailed insights and recommendations.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-center py-4 mt-5">
+        <div class="container">
+            <p class="text-light mb-0">
+                &copy; 2025 Loan Prediction System. Advanced ML-powered financial risk assessment.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Form submission handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const predictionForm = document.getElementById('predictionForm');
+            if (predictionForm) {
+                predictionForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Show loading indicator
+                    document.getElementById('loadingIndicator').style.display = 'block';
+                    document.getElementById('predictionResult').style.display = 'none';
+                    
+                    // Get form values
+                    const formData = {
+                        LoanAmount: parseFloat(document.getElementById('loanAmount').value),
+                        InterestRate: parseFloat(document.getElementById('interestRate').value),
+                        Term: document.getElementById('term').value,
+                        EmploymentLength: parseFloat(document.getElementById('empLength').value),
+                        AnnualIncome: parseFloat(document.getElementById('annualIncome').value),
+                        DebtToIncomeRatio: parseFloat(document.getElementById('dti').value),
+                        FicoScore: parseFloat(document.getElementById('fico').value),
+                        OpenAccounts: parseFloat(document.getElementById('openAccounts').value),
+                        HomeOwnership: document.getElementById('homeOwnership').value
+                    };
+                    
+                    try {
+                        // Validate form data
+                        if (!validateFormData(formData)) {
+                            throw new Error('Please check your input values. All fields are required.');
+                        }
+                        
+                        // Make API call to Flask backend
+                        const response = await fetch('/predict', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(formData)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'success') {
+                            displayResult(result, formData);
+                        } else {
+                            throw new Error(result.error || 'Unknown error occurred');
+                        }
+                        
+                    } catch (error) {
+                        console.error("Error occurred:", error);
+                        displayError(error.message);
+                    } finally {
+                        // Hide loading indicator
+                        document.getElementById('loadingIndicator').style.display = 'none';
+                    }
+                });
+            }
+
+            // Add input validation as users type
+            const numberInputs = document.querySelectorAll('input[type="number"]');
+            numberInputs.forEach(input => {
+                input.addEventListener('input', validateNumberInput);
+            });
+
+            // Auto-hide flash messages after 5 seconds
+            setTimeout(() => {
+                const flashMessages = document.querySelectorAll('.flash-message');
+                flashMessages.forEach(message => {
+                    message.remove();
+                });
+            }, 5000);
+        });
+
+        // Form validation functions
+        function validateFormData(formData) {
+            // Basic validation - check if required fields have values
+            return formData.LoanAmount && formData.AnnualIncome && 
+                   formData.InterestRate && formData.DebtToIncomeRatio &&
+                   formData.FicoScore && formData.OpenAccounts;
+        }
+
+        function validateNumberInput(e) {
+            const input = e.target;
+            const min = parseFloat(input.min) || 0;
+            const max = parseFloat(input.max) || Infinity;
+            const value = parseFloat(input.value);
+            
+            if (isNaN(value) || value < min || value > max) {
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        }
+
+        // provideRiskFeedback function
+        function provideRiskFeedback(formData) {
+            const feedback = [];
+            const loanToIncome = formData.LoanAmount / formData.AnnualIncome;
+            
+            if (loanToIncome > 4) {
+                feedback.push("Your loan amount is very high relative to your income");
+            } else if (loanToIncome > 2.5) {
+                feedback.push("Your loan amount is high relative to your income");
+            }
+            
+            if (formData.DebtToIncomeRatio > 43) {
+                feedback.push("Your debt-to-income ratio is above recommended levels");
+            } else if (formData.DebtToIncomeRatio > 36) {
+                feedback.push("Your debt-to-income ratio is elevated");
+            }
+            
+            if (formData.InterestRate > 12) {
+                feedback.push("Your interest rate is quite high");
+            }
+            
+            if (formData.FicoScore < 650) {
+                feedback.push("Your credit score is below ideal range");
+            }
+            
+            if (formData.EmploymentLength < 2) {
+                feedback.push("Your employment history is relatively short");
+            }
+            
+            if (formData.OpenAccounts > 10) {
+                feedback.push("You have many open credit accounts");
+            }
+            
+            if (feedback.length > 0) {
+                return `<div class="mt-3">
+                    <h5>Key Factors:</h5>
+                    <ul class="text-start">
+                        ${feedback.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>`;
+            }
+            
+            return `<div class="mt-3">
+                <h5>Key Factors:</h5>
+                <p>Your financial profile shows good indicators for loan approval.</p>
+            </div>`;
+        }
+
+        // displayResult function
+        function displayResult(result, formData) {
+            const resultBox = document.getElementById('predictionResult');
+            resultBox.style.display = 'block';
+            
+            // Ensure we have valid values
+            const riskPercent = (result.probability * 100).toFixed(1);
+            const predictionText = result.prediction === 1 ? "High Default Risk" : "Low Default Risk";
+            
+            // Get feedback
+            let feedback = '';
+            if (formData && typeof formData === 'object' && formData.LoanAmount) {
+                feedback = provideRiskFeedback(formData);
+            } else {
+                feedback = `<div class="mt-3">
+                    <h5>Key Factors:</h5>
+                    <p>Unable to provide detailed feedback due to missing form data.</p>
+                </div>`;
+            }
+            
+            // Determine risk level
+            let riskLevel = (result.risk_level || '').toString().toLowerCase();
+            if (!riskLevel) {
+                riskLevel = riskPercent > 70 ? "high" : riskPercent > 40 ? "medium" : "low";
+            }
+
+            let resultHTML;
+            if (riskLevel.includes("high")) {
+                resultHTML = `<h4 class="text-danger">${predictionText}: ${riskPercent}%</h4>
+                            <p>This loan application shows a high risk of default based on our analysis.</p>
+                            <div class="progress my-3">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: ${riskPercent}%;" 
+                                    aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
+                            </div>
+                            ${feedback}
+                            <p class="mt-3">Recommendation: <strong>Reject application</strong> or require significant collateral</p>`;
+                resultBox.className = 'result-box alert alert-danger';
+            } else if (riskLevel.includes("medium")) {
+                resultHTML = `<h4 class="text-warning">${predictionText}: ${riskPercent}%</h4>
+                            <p>This loan application shows a moderate risk of default.</p>
+                            <div class="progress my-3">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: ${riskPercent}%;" 
+                                    aria-valuenow="${riskPercent}" aria-valuemin
