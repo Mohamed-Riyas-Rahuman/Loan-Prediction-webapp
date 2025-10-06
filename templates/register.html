@@ -13,32 +13,49 @@
                     </h3>
                     <p class="mb-0 mt-2 opacity-75">Join the Loan Prediction System</p>
                 </div>
+
                 <div class="card-body p-5">
+
+                    <!-- ✅ Flask-WTF CSRF Token -->
                     <form method="POST" action="{{ url_for('register') }}">
+                        {{ form.hidden_tag() }}
+
+                        <!-- ✅ Flash messages -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
                         <!-- Username Field -->
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="username" name="username" 
+                            <input type="text" class="form-control" id="username" name="username"
                                    placeholder="Username" required>
                             <label for="username">Username</label>
                         </div>
 
                         <!-- Email Field -->
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="email" name="email" 
+                            <input type="email" class="form-control" id="email" name="email"
                                    placeholder="Email" required>
                             <label for="email">Email Address</label>
                         </div>
 
                         <!-- Password Field -->
                         <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="password" name="password" 
+                            <input type="password" class="form-control" id="password" name="password"
                                    placeholder="Password" required minlength="6">
                             <label for="password">Password</label>
                         </div>
 
                         <!-- Confirm Password Field -->
                         <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
                                    placeholder="Confirm Password" required minlength="6">
                             <label for="confirm_password">Confirm Password</label>
                         </div>
@@ -50,7 +67,6 @@
                             </button>
                         </div>
 
-                        <!-- Divider -->
                         <hr class="my-4">
 
                         <!-- Login Link -->
