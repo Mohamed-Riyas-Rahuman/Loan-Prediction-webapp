@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -9,7 +9,7 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from dotenv import load_dotenv
-from sqlalchemy import text  # ← ADD THIS IMPORT
+from sqlalchemy import text
 import pandas as pd
 import numpy as np
 import os
@@ -18,8 +18,8 @@ from datetime import datetime
 # Load environment variables from .env file
 load_dotenv()  
 
-# Initialize Flask app
-app = Flask(__name__)
+# Initialize Flask app with STATIC FOLDER CONFIGURATION
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # Security: Ensure SECRET_KEY is always from environment
 secret_key = os.environ.get('SESSION_SECRET')
@@ -175,7 +175,7 @@ def verify_reset_token(token, expiration=3600):
 # ================================
 def check_database_connection():
     try:
-        db.session.execute(text("SELECT 1"))   # ✅ FIXED: Added text() import
+        db.session.execute(text("SELECT 1"))
         print("✅ Database connection successful")
         return True
     except Exception as e:
@@ -233,7 +233,7 @@ def predict_loan_default(input_data):
 # ================================
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return render_template('index.html')  # Changed from 'home.html' to 'index.html'
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -287,7 +287,7 @@ def register():
                 db.session.add(new_user)
                 db.session.commit()
                 flash('Registration successful! Please login.', 'success')
-                return redirect(url_for('login'))
+                return redirect(url_for('login'))  # ✅ FIXED: Redirect to login after registration
             except Exception as e:
                 db.session.rollback()
                 flash('Error creating account. Please try again.', 'error')
@@ -400,6 +400,16 @@ def auth_status():
     else:
         return jsonify({'authenticated': False})
 
+# ✅ ADDED: Explicit static file route to fix 404 errors
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
+# ✅ ADDED: Favicon route
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.static_folder, 'favicon.ico')
+
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy', 'message': '✅ Server is running'})
@@ -407,28 +417,23 @@ def health_check():
 # ================================
 # Error Handlers
 # ================================
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
 @app.errorhandler(500)
 def internal_error(error):
     import traceback
     tb = traceback.format_exc()
     print(f"💥 INTERNAL SERVER ERROR:\n{tb}")
-    return f"""
-    <h2>Internal Server Error</h2>
-    <p>Error details have been printed to the console.</p>
-    <p>Please check your terminal for more information.</p>
-    <pre>{str(error)}</pre>
-    """, 500
+    return render_template('500.html'), 500
 
 @app.errorhandler(Exception)
 def handle_exception(error):
     import traceback
     tb = traceback.format_exc()
     print(f"💥 UNEXPECTED ERROR:\n{tb}")
-    return f"""
-    <h2>Unexpected Error</h2>
-    <p>Error details have been printed to the console.</p>
-    <pre>{str(error)}</pre>
-    """, 500
+    return render_template('500.html'), 500
 
 # ================================
 # Main
