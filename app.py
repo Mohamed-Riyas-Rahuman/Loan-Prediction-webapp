@@ -9,21 +9,16 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from dotenv import load_dotenv
-from sqlalchemy import text
 import pandas as pd
 import os
 from datetime import datetime
 
-# Load environment variables
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
 
-# Secret key
-secret_key = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
-app.config['SECRET_KEY'] = secret_key
-
-# Flask-Mail config
+# Mail config
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
@@ -38,7 +33,6 @@ if database_url.startswith('postgres://'):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Extensions
 CORS(app, origins=["*"], supports_credentials=False)
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -247,7 +241,7 @@ def predict_api():
         print("Prediction error:", e)
         return jsonify({'error': 'Internal server error', 'status': 'error'}), 500
 
-# Static files
+# Serve static files
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
