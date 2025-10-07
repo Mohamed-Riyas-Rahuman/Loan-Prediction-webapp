@@ -23,7 +23,7 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 secret_key = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
 app.config['SECRET_KEY'] = secret_key
 
-# Flask-Mail
+# Flask-Mail config
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
@@ -31,24 +31,24 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME'))
 
-# Database
+# Database config
 database_url = os.environ.get('DATABASE_URL', 'sqlite:///loan_prediction.db')
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize extensions
-CORS(app, origins=["*"])
+# Extensions
+CORS(app, origins=["*"], supports_credentials=False)
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# ==========================
+# =======================
 # Forms
-# ==========================
+# =======================
 class LoginForm(FlaskForm):
     username = StringField('Username or Email', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -71,9 +71,9 @@ class ResetPasswordForm(FlaskForm):
     password2 = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset Password')
 
-# ==========================
-# Database model
-# ==========================
+# =======================
+# Models
+# =======================
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -83,7 +83,7 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def query_by_username_or_email(identifier):
-        return User.query.filter((User.username==identifier) | (User.email==identifier)).first()
+        return User.query.filter((User.username == identifier) | (User.email == identifier)).first()
 
     @staticmethod
     def query_by_email(email):
@@ -102,28 +102,26 @@ class User(UserMixin, db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ==========================
-# Password reset helpers
-# ==========================
+# =======================
+# Helper functions
+# =======================
 def send_password_reset_email(user):
     try:
         token = serializer.dumps(user.email, salt='password-reset-salt')
         reset_url = url_for('reset_password', token=token, _external=True)
-        if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-            flash(f'Password reset link: {reset_url}', 'info')
-            return True
+        flash(f'Password reset link: {reset_url}', 'info')
 
-        msg = Message(
-            'Password Reset Request - Loan Prediction System',
-            recipients=[user.email],
-            sender=f"Loan Predictor <{app.config['MAIL_USERNAME']}>",
-            body=f"Hello {user.username},\n\nReset your password: {reset_url}\n"
-        )
-        mail.send(msg)
+        if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
+            msg = Message(
+                'Password Reset Request',
+                recipients=[user.email],
+                sender="Loan Predictor <riyasss035@gmail.com>",
+                body=f"Hello {user.username},\nClick here to reset: {reset_url}"
+            )
+            mail.send(msg)
         return True
     except Exception as e:
-        flash(f'Error sending email. Reset link: {reset_url}', 'error')
-        print(f"Error sending reset email: {e}")
+        print(f"Error sending email: {e}")
         return False
 
 def verify_reset_token(token, expiration=3600):
@@ -132,32 +130,25 @@ def verify_reset_token(token, expiration=3600):
     except:
         return None
 
-# ==========================
-# DB Init
-# ==========================
-def init_db():
-    with app.app_context():
-        db.create_all()
-
-# ==========================
-# Mock ML Prediction
-# ==========================
 def predict_loan_default(input_data):
-    # Safe extraction
+    # Mock function
     loan_amount = float(input_data.iloc[0].get('LoanAmount', 10000))
     annual_income = float(input_data.iloc[0].get('AnnualIncome', 50000))
     interest_rate = float(input_data.iloc[0].get('InterestRate', 7.5))
     risk_score = (loan_amount / annual_income) * 0.4 + (interest_rate / 10) * 0.3
     risk_score = max(0.1, min(0.9, risk_score))
     prediction = 1 if risk_score > 0.5 else 0
-    if risk_score > 0.7: risk_level = "High"
-    elif risk_score > 0.4: risk_level = "Medium"
-    else: risk_level = "Low"
+    if risk_score > 0.7:
+        risk_level = "High"
+    elif risk_score > 0.4:
+        risk_level = "Medium"
+    else:
+        risk_level = "Low"
     return prediction, risk_score, risk_level
 
-# ==========================
+# =======================
 # Routes
-# ==========================
+# =======================
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -171,9 +162,10 @@ def login():
         user = User.query_by_username_or_email(form.username.data)
         if user and check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)
-            flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(request.args.get('next') or url_for('home'))
-        flash('Invalid username/email or password', 'error')
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+        else:
+            flash('Invalid username/email or password', 'error')
     return render_template('login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -183,15 +175,16 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         if User.query_by_username(form.username.data):
-            flash('Username exists', 'error')
+            flash('Username already exists', 'error')
         elif User.query_by_email(form.email.data):
-            flash('Email exists', 'error')
+            flash('Email already exists', 'error')
         else:
-            user = User(username=form.username.data, email=form.email.data,
+            user = User(username=form.username.data,
+                        email=form.email.data,
                         password_hash=generate_password_hash(form.password.data))
             db.session.add(user)
             db.session.commit()
-            flash('Registration successful! Please login.', 'success')
+            flash('Registration successful!', 'success')
             return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
@@ -204,12 +197,10 @@ def logout():
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
     form = ForgotPasswordForm()
     if form.validate_on_submit():
         user = User.query_by_email(form.email.data)
-        flash('If an account exists, a reset link has been sent.', 'info')
+        flash('If an account with that email exists, a reset link has been sent.', 'info')
         if user:
             send_password_reset_email(user)
         return redirect(url_for('login'))
@@ -217,11 +208,9 @@ def forgot_password():
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
     email = verify_reset_token(token)
     if not email:
-        flash('Invalid/expired link', 'error')
+        flash('Invalid or expired link.', 'error')
         return redirect(url_for('forgot_password'))
     user = User.query_by_email(email)
     if not user:
@@ -230,32 +219,35 @@ def reset_password(token):
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.update_password(generate_password_hash(form.password.data))
-        flash('Password reset successfully. Please login.', 'success')
+        flash('Password reset successful.', 'success')
         return redirect(url_for('login'))
     return render_template('reset_password.html', form=form)
 
+# GET page for prediction form
 @app.route('/predict')
 @login_required
 def predict_page():
     return render_template('predict.html')
 
+# POST API for predictions
 @app.route('/api/predict', methods=['POST'])
+@login_required
 def predict_api():
-    if not current_user.is_authenticated:
-        return jsonify({'error': 'Not authenticated', 'status': 'error'}), 401
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No input data', 'status': 'error'}), 400
         input_df = pd.DataFrame([data])
         prediction, probability, risk_level = predict_loan_default(input_df)
-        return jsonify({'prediction': int(prediction), 'probability': float(probability),
-                        'risk_level': risk_level, 'status': 'success'})
+        return jsonify({
+            'prediction': int(prediction),
+            'probability': float(probability),
+            'risk_level': risk_level,
+            'status': 'success'
+        })
     except Exception as e:
         print("Prediction error:", e)
         return jsonify({'error': 'Internal server error', 'status': 'error'}), 500
 
-# Static files & favicon
+# Static files
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
@@ -268,11 +260,17 @@ def favicon():
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'Server running'})
 
-# ==========================
-# Main
-# ==========================
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
+
 if __name__ == '__main__':
-    init_db()
+    db.create_all()
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_DEBUG', '').lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
