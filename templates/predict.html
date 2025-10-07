@@ -91,13 +91,13 @@
             </div>
 
             <!-- Loading Indicator -->
-            <div class="loading" id="loadingIndicator">
+            <div class="loading" id="loadingIndicator" style="display:none;">
                 <div class="spinner"></div>
                 <p class="mt-3 text-muted">Analyzing loan data...</p>
             </div>
 
             <!-- Prediction Result -->
-            <div class="result-box" id="predictionResult">
+            <div class="result-box" id="predictionResult" style="display:none;">
                 <!-- Results will be populated by JavaScript -->
             </div>
         </div>
@@ -107,98 +107,79 @@
 
 {% block extra_js %}
 <script>
-// Update the form submission to use the new API endpoint
+// Handle prediction form submission
 document.getElementById('predictionForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    // Show loading indicator
-    document.getElementById('loadingIndicator').style.display = 'block';
-    document.getElementById('predictionResult').style.display = 'none';
+    const loading = document.getElementById('loadingIndicator');
+    const resultBox = document.getElementById('predictionResult');
+    loading.style.display = 'block';
+    resultBox.style.display = 'none';
     
-    // Get form values
     const formData = {
         LoanAmount: parseFloat(document.getElementById('loanAmount').value),
         InterestRate: parseFloat(document.getElementById('interestRate').value),
-        Term: document.getElementById('term').value,
+        Term: parseInt(document.getElementById('term').value),
         EmploymentLength: parseFloat(document.getElementById('empLength').value),
         AnnualIncome: parseFloat(document.getElementById('annualIncome').value),
         DebtToIncomeRatio: parseFloat(document.getElementById('dti').value),
         FicoScore: parseFloat(document.getElementById('fico').value),
-        OpenAccounts: parseFloat(document.getElementById('openAccounts').value),
+        OpenAccounts: parseInt(document.getElementById('openAccounts').value),
         HomeOwnership: document.getElementById('homeOwnership').value
     };
     
     try {
-        // Make API call to Flask backend
         const response = await fetch('/api/predict', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(formData)
         });
-        
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+
+        // If response is HTML, probably redirected to login
+        const contentType = response.headers.get("content-type");
+        if (!response.ok || !contentType || !contentType.includes("application/json")) {
+            throw new Error("You are not logged in or server returned an error.");
         }
         
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            displayResult(result, formData);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            displayResult(data, formData);
         } else {
-            throw new Error(result.error || 'Unknown error occurred');
+            throw new Error(data.error || 'Prediction failed.');
         }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        displayError(error.message);
+
+    } catch (err) {
+        console.error(err);
+        displayError(err.message);
     } finally {
-        // Hide loading indicator
-        document.getElementById('loadingIndicator').style.display = 'none';
+        loading.style.display = 'none';
     }
 });
 
 function displayResult(result, formData) {
     const resultBox = document.getElementById('predictionResult');
     resultBox.style.display = 'block';
-    
     const riskPercent = (result.probability * 100).toFixed(1);
     const predictionText = result.prediction === 1 ? "High Default Risk" : "Low Default Risk";
-    
-    let riskLevel = result.risk_level ? result.risk_level.toLowerCase() : 
-                   (riskPercent > 70 ? "high" : riskPercent > 40 ? "medium" : "low");
-    
-    let resultHTML;
-    if (riskLevel.includes("high")) {
-        resultHTML = `<h4 class="text-danger">${predictionText}: ${riskPercent}%</h4>
-                      <p>This loan application shows a high risk of default based on our analysis.</p>
+    const riskLevel = result.risk_level ? result.risk_level.toLowerCase() : "low";
+
+    let colorClass = riskLevel.includes("high") ? "danger" :
+                     riskLevel.includes("medium") ? "warning" : "success";
+
+    let resultHTML = `<h4 class="text-${colorClass}">${predictionText}: ${riskPercent}%</h4>
+                      <p>${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} risk based on analysis.</p>
                       <div class="progress my-3">
-                        <div class="progress-bar bg-danger" role="progressbar" style="width: ${riskPercent}%;" 
+                        <div class="progress-bar bg-${colorClass}" role="progressbar" style="width: ${riskPercent}%;" 
                              aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
                       </div>`;
-    } else if (riskLevel.includes("medium")) {
-        resultHTML = `<h4 class="text-warning">${predictionText}: ${riskPercent}%</h4>
-                      <p>This loan application shows a moderate risk of default. Further review recommended.</p>
-                      <div class="progress my-3">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: ${riskPercent}%;" 
-                             aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
-                      </div>`;
-    } else {
-        resultHTML = `<h4 class="text-success">${predictionText}: ${riskPercent}%</h4>
-                      <p>This loan application shows a low risk of default. Good candidate for approval.</p>
-                      <div class="progress my-3">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: ${riskPercent}%;" 
-                             aria-valuenow="${riskPercent}" aria-valuemin="0" aria-valuemax="100">${riskPercent}%</div>
-                      </div>`;
-    }
     
-    // Add feedback based on form data
+    // Feedback
     const feedback = provideRiskFeedback(formData);
     resultHTML += feedback;
-    
+
     resultBox.innerHTML = resultHTML;
-    resultBox.className = `result-box alert alert-${riskLevel.includes("high") ? "danger" : riskLevel.includes("medium") ? "warning" : "success"}`;
+    resultBox.className = `result-box alert alert-${colorClass}`;
 }
 
 function displayError(message) {
@@ -211,40 +192,26 @@ function displayError(message) {
 function provideRiskFeedback(formData) {
     const feedback = [];
     const loanToIncome = formData.LoanAmount / formData.AnnualIncome;
-    
-    if (loanToIncome > 4) {
-        feedback.push("Loan amount is very high relative to income");
-    } else if (loanToIncome > 2.5) {
-        feedback.push("Loan amount is high relative to income");
-    }
-    
-    if (formData.DebtToIncomeRatio > 43) {
-        feedback.push("Debt-to-income ratio is above recommended levels");
-    } else if (formData.DebtToIncomeRatio > 36) {
-        feedback.push("Debt-to-income ratio is elevated");
-    }
-    
-    if (formData.InterestRate > 12) {
-        feedback.push("Interest rate is quite high");
-    }
-    
-    if (formData.FicoScore < 650) {
-        feedback.push("Credit score is below ideal range");
-    }
-    
-    if (formData.EmploymentLength < 2) {
-        feedback.push("Employment history is relatively short");
-    }
-    
+
+    if (loanToIncome > 4) feedback.push("Loan amount is very high relative to income");
+    else if (loanToIncome > 2.5) feedback.push("Loan amount is high relative to income");
+
+    if (formData.DebtToIncomeRatio > 43) feedback.push("Debt-to-income ratio is above recommended levels");
+    else if (formData.DebtToIncomeRatio > 36) feedback.push("Debt-to-income ratio is elevated");
+
+    if (formData.InterestRate > 12) feedback.push("Interest rate is quite high");
+    if (formData.FicoScore < 650) feedback.push("Credit score is below ideal range");
+    if (formData.EmploymentLength < 2) feedback.push("Employment history is relatively short");
+
     if (feedback.length > 0) {
         return `<div class="mt-3">
             <h5>Key Factors:</h5>
             <ul class="text-start">
-                ${feedback.map(item => `<li>${item}</li>`).join('')}
+                ${feedback.map(f => `<li>${f}</li>`).join('')}
             </ul>
         </div>`;
     }
-    
+
     return `<div class="mt-3">
         <h5>Key Factors:</h5>
         <p>Financial profile shows good indicators for loan approval.</p>
