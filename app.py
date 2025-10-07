@@ -132,11 +132,11 @@ def send_password_reset_email(user):
             flash(f'Password reset link: {reset_url}', 'info')
             return True
 
-        # Try to send email with custom sender name
+        # FIXED: Use the configured sender - now using loanpredictorapp@gmail.com
         msg = Message(
             'Password Reset Request - Loan Prediction System',
             recipients=[user.email],
-            sender="Loan Predictor <riyasss035@gmail.com>",
+            sender=app.config['MAIL_DEFAULT_SENDER'],  # ← FIXED: Now uses loanpredictorapp@gmail.com
             body=f"""
 Hello {user.username},
 
@@ -192,6 +192,16 @@ def init_db():
                 print(f"❌ Error creating tables: {e}")
         else:
             print("❌ Cannot create tables - database connection failed")
+
+# Email configuration debug
+def check_email_config():
+    if app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'):
+        print("✅ Email configuration found")
+        print(f"📧 Mail server: {app.config.get('MAIL_SERVER')}")
+        print(f"📧 Username: {app.config.get('MAIL_USERNAME')}")
+        print(f"📧 Sender: {app.config.get('MAIL_DEFAULT_SENDER')}")
+    else:
+        print("❌ Email not configured - using console fallback")
 
 # ================================
 # ML Prediction Function
@@ -488,6 +498,7 @@ def handle_exception(error):
 # Main
 # ================================
 if __name__ == '__main__':
+    check_email_config()  # Added email debug
     init_db()
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_DEBUG', '').lower() == 'true'
