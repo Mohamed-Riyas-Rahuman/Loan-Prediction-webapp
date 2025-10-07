@@ -346,17 +346,11 @@ def forgot_password():
     
     if form.validate_on_submit():
         email = form.email.data
-        user = User.query_by_email(email)
-        
-        # Always show the same message for security
+        user = User.query_by_email(email)  
         flash('If an account with that email exists, a password reset link has been sent.', 'info')
-        
         if user:
             send_password_reset_email(user)
-        
-        return redirect(url_for('login'))
-    
-    return render_template('forgot_password.html', form=form)
+    return render_template('forgot_password.html', form=form) 
 
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
