@@ -14,12 +14,27 @@
                     <p class="mb-0 mt-2 opacity-75">Sign in to your account</p>
                 </div>
                 <div class="card-body p-5">
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% for category, message in messages %}
+                          <div class="alert alert-{{ 'success' if category=='success' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                          </div>
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+
                     <form method="POST" action="{{ url_for('login') }}">
+                        {{ form.hidden_tag() }}
+
                         <!-- Username/Email Field -->
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="username" name="username" 
-                                   placeholder="Username or Email" required>
-                            <label for="username">Username</label>
+                                   placeholder="Username or Email" value="{{ request.form.username or '' }}" required>
+                            <label for="username">Username or Email</label>
                         </div>
 
                         <!-- Password Field -->
@@ -40,7 +55,7 @@
                                 </div>
                             </div>
                             <div class="col-6 text-end">
-                                <a href="#" class="text-primary text-decoration-none small">
+                                <a href="{{ url_for('forgot_password') }}" class="text-primary text-decoration-none small">
                                     Forgot password?
                                 </a>
                             </div>
