@@ -155,6 +155,7 @@ Loan Predictor Team
         )
         mail.send(msg)
         print(f"✅ Email sent to {user.email}")
+        flash('Password reset email has been sent!', 'success')  # ADDED: Success feedback
         return True
 
     except Exception as e:
@@ -278,6 +279,7 @@ def predict_loan_default(input_data):
 # ================================
 @app.route('/')
 def home():
+    print("🏠 Home page accessed - User:", current_user.is_authenticated)
     return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -313,6 +315,7 @@ def register():
     form = RegistrationForm()
     
     if form.validate_on_submit():
+        print("✅ Form validation successful")  # DEBUG
         username = form.username.data
         email = form.email.data
         password = form.password.data
@@ -320,8 +323,10 @@ def register():
         # Check if username or email already exists
         if User.query_by_username(username):
             flash('Username already exists', 'error')
+            print("❌ Username exists")  # DEBUG
         elif User.query_by_email(email):
             flash('Email already exists', 'error')
+            print("❌ Email exists")  # DEBUG
         else:
             new_user = User(
                 username=username,
@@ -332,11 +337,14 @@ def register():
                 db.session.add(new_user)
                 db.session.commit()
                 flash('Registration successful! Please login.', 'success')
+                print("✅ User created, redirecting to login")  # DEBUG
                 return redirect(url_for('login'))
             except Exception as e:
                 db.session.rollback()
                 flash('Error creating account. Please try again.', 'error')
-                print(f"Registration error: {e}")
+                print(f"❌ Registration error: {e}")
+    else:
+        print("❌ Form validation failed:", form.errors)  # DEBUG
     
     return render_template('register.html', form=form)
 

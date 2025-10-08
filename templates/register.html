@@ -24,7 +24,8 @@
                         {% with messages = get_flashed_messages(with_categories=true) %}
                             {% if messages %}
                                 {% for category, message in messages %}
-                                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    <div class="alert alert-{% if category == 'error' %}danger{% else %}{{ category }}{% endif %} alert-dismissible fade show" role="alert">
+                                        <i class="fas fa-{% if category == 'error' or category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% elif category == 'info' %}info-circle{% else %}check-circle{% endif %} me-2"></i>
                                         {{ message }}
                                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                     </div>
@@ -32,39 +33,61 @@
                             {% endif %}
                         {% endwith %}
 
-                        <!-- Username Field -->
+                        <!-- Username Field - FIXED: Using Flask-WTF field -->
                         <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="username" name="username"
-                                   placeholder="Username" required>
+                            {{ form.username(class="form-control", id="username", placeholder="Username") }}
                             <label for="username">Username</label>
+                            {% if form.username.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.username.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Email Field -->
+                        <!-- Email Field - FIXED: Using Flask-WTF field -->
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="Email" required>
+                            {{ form.email(class="form-control", id="email", placeholder="name@example.com") }}
                             <label for="email">Email Address</label>
+                            {% if form.email.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Password Field -->
+                        <!-- Password Field - FIXED: Using Flask-WTF field -->
                         <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="password" name="password"
-                                   placeholder="Password" required minlength="6">
+                            {{ form.password(class="form-control", id="password", placeholder="Password") }}
                             <label for="password">Password</label>
+                            {% if form.password.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.password.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Confirm Password Field -->
+                        <!-- Confirm Password Field - FIXED: Using Flask-WTF field -->
                         <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
-                                   placeholder="Confirm Password" required minlength="6">
+                            {{ form.confirm_password(class="form-control", id="confirm_password", placeholder="Confirm Password") }}
                             <label for="confirm_password">Confirm Password</label>
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.confirm_password.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Submit Button -->
+                        <!-- Submit Button - FIXED: Using Flask-WTF submit button -->
                         <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus me-2"></i>Create Account
-                            </button>
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
                         </div>
 
                         <hr class="my-4">
@@ -86,8 +109,7 @@
             <div class="text-center mt-4">
                 <p class="text-muted small">
                     By creating an account, you agree to our terms of service and privacy policy.
-                </p>
-            </div>
+                </div>
         </div>
     </div>
 </div>
@@ -96,32 +118,54 @@
 {% block extra_js %}
 <script>
 // Password confirmation validation
-document.getElementById('confirm_password').addEventListener('input', function() {
-    const password = document.getElementById('password').value;
-    const confirmPassword = this.value;
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
     
-    if (password !== confirmPassword) {
-        this.setCustomValidity('Passwords do not match');
-    } else {
-        this.setCustomValidity('');
+    if (confirmPasswordField) {
+        confirmPasswordField.addEventListener('input', function() {
+            const password = passwordField.value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword && confirmPassword.length > 0) {
+                this.setCustomValidity('Passwords do not match');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
     }
-});
 
-// Password strength indicator
-document.getElementById('password').addEventListener('input', function() {
-    const password = this.value;
-    const strength = getPasswordStrength(password);
-    // You can add visual password strength indicator here
+    // Password strength indicator
+    if (passwordField) {
+        passwordField.addEventListener('input', function() {
+            const password = this.value;
+            const strength = getPasswordStrength(password);
+            updatePasswordStrengthIndicator(strength);
+        });
+    }
 });
 
 function getPasswordStrength(password) {
     let strength = 0;
+    if (password.length >= 6) strength++;
     if (password.length >= 8) strength++;
     if (/[a-z]/.test(password)) strength++;
     if (/[A-Z]/.test(password)) strength++;
     if (/[0-9]/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
     return strength;
+}
+
+function updatePasswordStrengthIndicator(strength) {
+    // Optional: Add visual password strength indicator
+    const indicator = document.getElementById('password-strength');
+    if (indicator) {
+        const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+        const strengthClass = ['danger', 'warning', 'info', 'primary', 'success', 'success'];
+        
+        indicator.textContent = strengthText[Math.min(strength, 5)];
+        indicator.className = `badge bg-${strengthClass[Math.min(strength, 5)]}`;
+    }
 }
 </script>
 {% endblock %}
